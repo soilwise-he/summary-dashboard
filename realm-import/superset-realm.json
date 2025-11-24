@@ -1,0 +1,73 @@
+{
+  "realm": "superset_realm",
+  "enabled": true,
+  "users": [
+    {
+      "username": "admin",
+      "enabled": true,
+      "email": "admin@example.com",
+      "firstName": "Admin",
+      "lastName": "User",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["default-roles-superset_realm", "offline_access", "uma_authorization", "admin"],
+      "clientRoles": {
+        "realm-management": ["manage-users", "manage-clients", "manage-realm"]
+      }
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "superset",
+      "name": "Superset",
+      "enabled": true,
+      "secret": "Z2Gen97MXT3Zdpkc4ZIgipWc4blBaTwu",
+      "publicClient": false,
+      "redirectUris": [
+        "http://localhost:8088/*",
+        "http://superset:8088/*"
+      ],
+      "webOrigins": [
+        "http://localhost:8088",
+        "http://superset:8088"
+      ],
+      "protocol": "openid-connect",
+      "attributes": {
+        "access.token.lifespan": "600"
+      },
+      "protocolMappers": [
+        {
+          "name": "roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "roles",
+            "jsonType.label": "String"
+          }
+        }
+      ]
+    }
+  ],
+  "roles": {
+    "realm": [
+      {
+        "name": "admin",
+        "description": "Administrator role"
+      },
+      {
+        "name": "user",
+        "description": "User role"
+      }
+    ]
+  }
+}
