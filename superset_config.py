@@ -4,9 +4,9 @@ from flask_appbuilder.security.manager import AUTH_OAUTH
 from superset.security import SupersetSecurityManager
 from flask_login import current_user
 
-# Keycloak Configuration
-KEYCLOAK_INTERNAL_URL = os.getenv('KEYCLOAK_INTERNAL_URL', 'http://keycloak:8080')
-KEYCLOAK_EXTERNAL_URL = os.getenv('KEYCLOAK_EXTERNAL_URL', 'http://localhost:8090')
+# Keycloak Configuration - Updated for external Keycloak server
+KEYCLOAK_INTERNAL_URL = os.getenv('KEYCLOAK_INTERNAL_URL', 'http://keycloak-server:8080')
+KEYCLOAK_EXTERNAL_URL = os.getenv('KEYCLOAK_EXTERNAL_URL', 'http://keycloak-server:8080')
 KEYCLOAK_REALM = os.getenv('KEYCLOAK_REALM', 'superset_realm')
 KEYCLOAK_CLIENT_ID = os.getenv('KEYCLOAK_CLIENT_ID', 'superset')
 KEYCLOAK_CLIENT_SECRET = os.getenv('KEYCLOAK_CLIENT_SECRET', 'Z2Gen97MXT3Zdpkc4ZIgipWc4blBaTwu')

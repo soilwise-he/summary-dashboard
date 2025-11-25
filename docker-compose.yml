@@ -1,21 +1,4 @@
 services:
-  postgres:
-    image: postgres:15-alpine
-    container_name: postgres
-    environment:
-      POSTGRES_DB: keycloak
-      POSTGRES_USER: keycloak
-      POSTGRES_PASSWORD: keycloak_db_password
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - app-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U keycloak"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   redis:
     image: redis:7-alpine
     container_name: redis
@@ -26,45 +9,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
-  keycloak:
-    image: quay.io/keycloak/keycloak:23.0
-    container_name: keycloak
-    command:
-      - start-dev
-      - --import-realm
-    environment:
-      KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
-      KC_DB_USERNAME: keycloak
-      KC_DB_PASSWORD: keycloak_db_password
-      KC_HOSTNAME: localhost
-      KC_HOSTNAME_PORT: 8090
-      KC_HOSTNAME_STRICT: false
-      KC_HOSTNAME_STRICT_HTTPS: false
-      KC_HOSTNAME_STRICT_BACKCHANNEL: false
-      KC_HTTP_ENABLED: true
-      KC_HTTP_PORT: 8080
-      KC_LOG_LEVEL: info
-      KC_METRICS_ENABLED: true
-      KC_HEALTH_ENABLED: true
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: admin
-    ports:
-      - "8090:8080"
-    volumes:
-      - ./realm-import:/opt/keycloak/data/import:ro
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - app-network
-    healthcheck:
-      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080;echo -e \"GET /health/ready HTTP/1.1\r\nhost: 127.0.0.1:8080\r\nConnection: close\r\n\r\n\" >&3;grep \"HTTP/1.1 200 OK\" <&3"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
 
   superset:
     build:
@@ -85,8 +29,6 @@ services:
     depends_on:
       redis:
         condition: service_healthy
-      keycloak:
-        condition: service_healthy
     networks:
       - app-network
     command: >
@@ -104,8 +46,6 @@ services:
       start_period: 90s
 
 volumes:
-  postgres_data:
-    driver: local
   superset_home:
     driver: local
 
