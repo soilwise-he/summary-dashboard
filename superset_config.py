@@ -4,12 +4,12 @@ from flask_appbuilder.security.manager import AUTH_OAUTH
 from superset.security import SupersetSecurityManager
 from flask_login import current_user
 
-# Keycloak Configuration - Updated for external Keycloak server
-KEYCLOAK_INTERNAL_URL = os.getenv('KEYCLOAK_INTERNAL_URL', 'http://keycloak-server:8080')
-KEYCLOAK_EXTERNAL_URL = os.getenv('KEYCLOAK_EXTERNAL_URL', 'http://keycloak-server:8080')
+# Keycloak Configuration
+KEYCLOAK_INTERNAL_URL = os.getenv('KEYCLOAK_INTERNAL_URL')
+KEYCLOAK_EXTERNAL_URL = os.getenv('KEYCLOAK_EXTERNAL_URL')
 KEYCLOAK_REALM = os.getenv('KEYCLOAK_REALM', 'superset_realm')
 KEYCLOAK_CLIENT_ID = os.getenv('KEYCLOAK_CLIENT_ID', 'superset')
-KEYCLOAK_CLIENT_SECRET = os.getenv('KEYCLOAK_CLIENT_SECRET', 'Z2Gen97MXT3Zdpkc4ZIgipWc4blBaTwu')
+KEYCLOAK_CLIENT_SECRET = os.getenv('KEYCLOAK_CLIENT_SECRET')
 
 # Superset specific config
 ROW_LIMIT = 5000
@@ -124,7 +124,7 @@ SESSION_REDIS = {
 REMEMBER_COOKIE_DURATION = 0
 
 # Secret key for session management
-SECRET_KEY = os.getenv('SUPERSET_SECRET_KEY', 'dfXeb4yvtbsF7P1JDlDItoAifnfUIujS')
+SECRET_KEY = os.getenv('SUPERSET_SECRET_KEY')
 
 # Cache configuration
 CACHE_CONFIG = {
