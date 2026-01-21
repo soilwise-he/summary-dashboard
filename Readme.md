@@ -11,15 +11,15 @@ docker-compose up -d
 Access:
 
 - Superset: http://localhost:8088
-- Keycloak: http://localhost:8090
+- Keycloak: http://localhost:XXXX
 - Login: `admin` / `admin`
 
 ### Architecture
 
 ```
-Browser → Superset:8088 ↔ Keycloak:8090
-    ↓                ↓
-    Redis          PostgreSQL
+Browser → Superset:8088 ↔ Keycloak:XXXX
+    ↓              
+    Redis      
 ```
 
 ## How It Works
@@ -43,7 +43,7 @@ Browser → Superset:8088 ↔ Keycloak:8090
 
 ## Key Files
 
-- `docker-compose.yml` - Services: Superset, Keycloak, Redis, PostgreSQL
+- `docker-compose.yml` - Services: Superset, Redis
 - `superset_config.py` - OAuth config, security manager, session/cache setup
 - `realm-import/*.json` - Keycloak realm with users and client config
 - `Dockerfile` - Superset image with dependencies

@@ -89,8 +89,6 @@ services:
     depends_on:
       redis:
         condition: service_healthy
-      keycloak:
-        condition: service_healthy
     networks:
       - app-network
     command: >
@@ -108,8 +106,6 @@ services:
       start_period: 90s
 
 volumes:
-  postgres_data:
-    driver: local
   superset_home:
     driver: local
 
