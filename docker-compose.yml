@@ -2,16 +2,18 @@ services:
   postgres:
     image: postgres:15-alpine
     container_name: postgres
+    env_file:
+      - .env
     environment:
-      POSTGRES_DB: keycloak
-      POSTGRES_USER: keycloak
-      POSTGRES_PASSWORD: keycloak_db_password
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - app-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U keycloak"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -33,25 +35,27 @@ services:
     command:
       - start-dev
       - --import-realm
+    env_file:
+      - .env
     environment:
       KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
-      KC_DB_USERNAME: keycloak
-      KC_DB_PASSWORD: keycloak_db_password
-      KC_HOSTNAME: localhost
-      KC_HOSTNAME_PORT: 8090
+      KC_DB_URL: jdbc:postgresql://postgres:${POSTGRES_PORT}/${POSTGRES_DB}
+      KC_DB_USERNAME: ${POSTGRES_USER}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      KC_HOSTNAME: ${KEYCLOAK_HOSTNAME}
+      KC_HOSTNAME_PORT: ${KEYCLOAK_HOSTNAME_PORT}
       KC_HOSTNAME_STRICT: false
       KC_HOSTNAME_STRICT_HTTPS: false
       KC_HOSTNAME_STRICT_BACKCHANNEL: false
       KC_HTTP_ENABLED: true
-      KC_HTTP_PORT: 8080
-      KC_LOG_LEVEL: info
+      KC_HTTP_PORT: ${KEYCLOAK_HTTP_PORT}
+      KC_LOG_LEVEL: ${KEYCLOAK_LOG_LEVEL}
       KC_METRICS_ENABLED: true
       KC_HEALTH_ENABLED: true
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: admin
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
     ports:
-      - "8090:8080"
+      - "${KEYCLOAK_HOSTNAME_PORT}:${KEYCLOAK_HTTP_PORT}"
     volumes:
       - ./realm-import:/opt/keycloak/data/import:ro
     depends_on:
@@ -60,7 +64,7 @@ services:
     networks:
       - app-network
     healthcheck:
-      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080;echo -e \"GET /health/ready HTTP/1.1\r\nhost: 127.0.0.1:8080\r\nConnection: close\r\n\r\n\" >&3;grep \"HTTP/1.1 200 OK\" <&3"]
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/${KEYCLOAK_HTTP_PORT};echo -e \"GET /health/ready HTTP/1.1\r\nhost: 127.0.0.1:${KEYCLOAK_HTTP_PORT}\r\nConnection: close\r\n\r\n\" >&3;grep \"HTTP/1.1 200 OK\" <&3"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -74,11 +78,11 @@ services:
     env_file:
       - .env
     environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - SUPERSET_LOAD_EXAMPLES=yes
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - SUPERSET_LOAD_EXAMPLES=${SUPERSET_LOAD_EXAMPLES}
     ports:
-      - "8088:8088"
+      - "${SUPERSET_PORT}:8088"
     volumes:
       - ./superset_config.py:/app/pythonpath/superset_config.py:ro
       - superset_home:/app/superset_home
@@ -92,7 +96,7 @@ services:
     command: >
       sh -c "
       superset db upgrade &&
-      superset fab create-admin --username admin --firstname Admin --lastname User --email admin@superset.com --password admin || true &&
+      superset fab create-admin --username ${SUPERSET_ADMIN_USERNAME} --firstname ${SUPERSET_ADMIN_FIRSTNAME} --lastname ${SUPERSET_ADMIN_LASTNAME} --email ${SUPERSET_ADMIN_EMAIL} --password ${SUPERSET_ADMIN_PASSWORD} || true &&
       superset init &&
       /usr/bin/run-server.sh
       "
