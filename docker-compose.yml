@@ -106,6 +106,8 @@ services:
       start_period: 90s
 
 volumes:
+  postgres_data:
+    driver: local
   superset_home:
     driver: local
 
