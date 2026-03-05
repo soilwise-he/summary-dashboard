@@ -77,3 +77,46 @@ docker-compose ps
 
 docker-compose logs -f superset
 docker-compose logs -f keycloak
+
+# Kubernetes Pods Flowchart
+
+```mermaid
+flowchart TB
+    Browser["🌐 Browser\nlocalhost:8088 / localhost:8090"]
+
+    subgraph Tunnel["minikube tunnel (Windows)"]
+        LB1["LoadBalancer\n127.0.0.1:8088"]
+        LB2["LoadBalancer\n127.0.0.1:8090"]
+    end
+
+    subgraph Cluster["Kubernetes Cluster"]
+        subgraph Superset["superset pod"]
+            S["Superset\n:8088"]
+        end
+
+        subgraph Keycloak["keycloak pod"]
+            K["Keycloak\n:8080"]
+        end
+
+        subgraph Redis["redis pod"]
+            R["Redis\n:6379"]
+        end
+
+        subgraph Postgres["postgres pod"]
+            P["PostgreSQL\n:5432"]
+        end
+    end
+
+    Browser -->|"① click login"| LB1
+    LB1 --> S
+    S -->|"② redirect to Keycloak\n(authorize_url)"| Browser
+    Browser -->|"③ login form"| LB2
+    LB2 --> K
+    K -->|"④ redirect back with code"| Browser
+    Browser -->|"⑤ /oauth-authorized/keycloak"| LB1
+    LB1 --> S
+    S -->|"⑥ token exchange\nkeycloak:8090"| K
+    S -->|"⑦ userinfo\nkeycloak:8090"| K
+    K -->|"stores sessions"| P
+    S -->|"cache / sessions"| R
+```

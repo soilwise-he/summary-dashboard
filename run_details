@@ -1,0 +1,42 @@
+kubectl delete deployment superset keycloak redis postgres
+kubectl delete service superset keycloak redis postgres
+Or if you want to delete everything at once from your manifest files:
+powershellkubectl delete -f env-configmap.yaml
+kubectl delete -f superset-config.yaml
+kubectl delete -f keycloak.yaml
+kubectl delete -f superset.yaml
+kubectl delete -f redis.yaml
+kubectl delete -f postgres.yaml
+
+And to bring everything back up:
+powershell
+kubectl apply -f configmap.yaml
+kubectl apply -f superset-config.yaml
+kubectl apply -f keycloak.yaml
+kubectl apply -f superset.yaml
+kubectl apply -f redis.yaml
+kubectl apply -f postgres.yaml
+
+
+-------------------------------------------------------
+env-configmap.yaml:
+yamlKEYCLOAK_EXTERNAL_URL: http://<keycloak-elb-dns>:8090
+SUPERSET_EXTERNAL_URL: http://<superset-elb-dns>:8088
+superset-config.yaml:
+pythonOVERWRITE_REDIRECT_URI = 'http://<superset-elb-dns>:8088/oauth-authorized/keycloak'
+keycloak.yaml (realm config redirectUris and webOrigins):
+json"redirectUris": ["http://<superset-elb-dns>:8088/*"],
+"webOrigins": ["http://<superset-elb-dns>:8088"]
+keycloak.yaml (deployment env):
+yaml- name: KC_HOSTNAME
+  value: "<keycloak-elb-dns>"
+- name: KC_HOSTNAME_PORT
+  value: "8090"
+Everything that stays the same:
+
+KEYCLOAK_INTERNAL_URL: http://keycloak:8090 — pod-to-pod doesn't change
+All Redis and Postgres internal URLs
+superset_config.py OAuth endpoint split logic
+All Kubernetes manifests structure
+
+On AWS the LoadBalancer services automatically provision ELBs — no minikube tunnel needed. The ELB DNS names are assigned automatically after you run kubectl apply.
