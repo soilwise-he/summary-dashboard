@@ -78,6 +78,65 @@ docker-compose ps
 docker-compose logs -f superset
 docker-compose logs -f keycloak
 
+# Run Kubernetes Services
+# Superset Dashboard — Deployment Guide
+
+## 🚀 First-Time Setup
+
+```powershell
+# 1. Start Minikube (Docker Desktop must be running)
+minikube start
+
+# 2. Build & load image into Minikube
+docker build -t superset:latest .
+minikube image load superset:latest
+
+# 3. Apply manifests
+cd k8_manifests
+kubectl apply -f configmap.yaml
+kubectl apply -f superset-config.yaml
+kubectl apply -f postgres.yaml
+kubectl apply -f redis.yaml
+kubectl apply -f keycloak.yaml
+kubectl apply -f superset.yaml
+
+# 4. Watch pods (wait until all Running)
+kubectl get pods -w
+
+# 5. Expose services — run in a separate terminal
+minikube tunnel
+```
+
+Superset → `http://localhost:8088` | Keycloak → `http://localhost:8090`
+
+---
+
+## 🔄 Teardown & Redeploy
+
+```powershell
+# Delete
+kubectl delete -f env-configmap.yaml -f superset-config.yaml -f keycloak.yaml -f superset.yaml -f redis.yaml -f postgres.yaml
+
+# Redeploy
+kubectl apply -f env-configmap.yaml -f superset-config.yaml -f postgres.yaml -f redis.yaml -f keycloak.yaml -f superset.yaml
+```
+
+---
+
+## ☁️ AWS — Values to Update
+
+| File | Key | Value |
+|------|-----|-------|
+| `env-configmap.yaml` | `KEYCLOAK_EXTERNAL_URL` | `http://<keycloak-elb-dns>:8090` |
+| `env-configmap.yaml` | `SUPERSET_EXTERNAL_URL` | `http://<superset-elb-dns>:8088` |
+| `superset-config.yaml` | `OVERWRITE_REDIRECT_URI` | `http://<superset-elb-dns>:8088/oauth-authorized/keycloak` |
+| `keycloak.yaml` | `KC_HOSTNAME` | `<keycloak-elb-dns>` |
+| `keycloak.yaml` | `redirectUris` | `http://<superset-elb-dns>:8088/*` |
+
+> No `minikube tunnel` needed on AWS — ELBs are provisioned automatically.  
+> Internal URLs (Redis, Postgres, `KEYCLOAK_INTERNAL_URL`) never change.
+
+
 # Kubernetes Pods Flowchart
 
 ```mermaid
@@ -120,3 +179,15 @@ flowchart TB
     K -->|"stores sessions"| P
     S -->|"cache / sessions"| R
 ```
+
+# Moving to AWS
+
+ELB DNS names are assigned automatically — no `minikube tunnel` needed. Only update these values:
+
+| File | What to change |
+|------|---------------|
+| `env-configmap.yaml` | `KEYCLOAK_EXTERNAL_URL` and `SUPERSET_EXTERNAL_URL` — change `http` → `https` |
+| `superset-config.yaml` | `OVERWRITE_REDIRECT_URI` — change `http` → `https`, set `ENABLE_PROXY_FIX = True`, `SESSION_COOKIE_SECURE = True` |
+| `keycloak.yaml` | `KC_HOSTNAME` to ELB DNS, `redirectUris` + `webOrigins` to `https`, set `KC_HOSTNAME_STRICT_HTTPS: "true"` and `KC_HTTP_ENABLED: "false"` |
+
+Everything else (internal Redis, Postgres, Keycloak pod-to-pod URLs) stays the same.
