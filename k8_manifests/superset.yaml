@@ -1,0 +1,189 @@
+# =============================================================================
+# Superset — PVC + Deployment + NodePort Service
+# =============================================================================
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: superset-home
+  labels:
+    app: superset
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: superset
+  labels:
+    app: superset
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: superset
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: superset
+        io.kompose.network/app-network: "true"
+    spec:
+      enableServiceLinks: false
+      containers:
+        - name: superset
+          image: superset:latest   # ← replace with your built image tag
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c"]
+          args:
+            - >
+              superset db upgrade &&
+              superset fab create-admin
+              --username $(SUPERSET_ADMIN_USERNAME)
+              --firstname $(SUPERSET_ADMIN_FIRSTNAME)
+              --lastname $(SUPERSET_ADMIN_LASTNAME)
+              --email $(SUPERSET_ADMIN_EMAIL)
+              --password $(SUPERSET_ADMIN_PASSWORD) || true &&
+              superset init &&
+              /usr/bin/run-server.sh
+          env:
+            # --- Superset Core ---
+            - name: SUPERSET_SECRET_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: SUPERSET_SECRET_KEY
+            - name: SUPERSET_ADMIN_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: SUPERSET_ADMIN_USERNAME
+            - name: SUPERSET_ADMIN_FIRSTNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: SUPERSET_ADMIN_FIRSTNAME
+            - name: SUPERSET_ADMIN_LASTNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: SUPERSET_ADMIN_LASTNAME
+            - name: SUPERSET_ADMIN_EMAIL
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: SUPERSET_ADMIN_EMAIL
+            - name: SUPERSET_ADMIN_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: SUPERSET_ADMIN_PASSWORD
+            - name: SUPERSET_LOAD_EXAMPLES
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: SUPERSET_LOAD_EXAMPLES
+
+            # --- Redis ---
+            - name: SUPERSET_REDIS_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: SUPERSET_REDIS_HOST
+            - name: SUPERSET_REDIS_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: SUPERSET_REDIS_PORT
+            # --- Override Kubernetes auto-injected service env vars ---
+            - name: REDIS_PORT
+              value: "6379"
+            - name: REDIS_HOST
+              value: "redis"
+            # --- Keycloak Integration ---
+            - name: KEYCLOAK_INTERNAL_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: KEYCLOAK_INTERNAL_URL
+            - name: KEYCLOAK_EXTERNAL_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: KEYCLOAK_EXTERNAL_URL
+            - name: KEYCLOAK_REALM
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: KEYCLOAK_REALM
+            - name: KEYCLOAK_CLIENT_SECRET
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: KEYCLOAK_CLIENT_SECRET
+
+          ports:
+            - containerPort: 8088
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8088
+            initialDelaySeconds: 60   # Give Superset time to initialise on first run
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8088
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 3
+
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+              
+          volumeMounts:
+            - name: superset-config
+              mountPath: /app/pythonpath/superset_config.py
+              subPath: superset_config.py
+              readOnly: true
+            - name: superset-home
+              mountPath: /app/superset_home
+
+      volumes:
+        - name: superset-config
+          configMap:
+            name: superset-config-file
+        - name: superset-home
+          persistentVolumeClaim:
+            claimName: superset-home
+
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: superset
+  labels:
+    app: superset
+spec:
+  type: LoadBalancer
+  ports:
+    - name: http
+      port: 8088
+      targetPort: 8088
+  selector:
+    app: superset
