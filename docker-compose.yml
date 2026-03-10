@@ -1,3 +1,4 @@
+version: "3"
 services:
   postgres:
     image: postgres:15-alpine
@@ -44,23 +45,22 @@ services:
       KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
       KC_HOSTNAME: ${KEYCLOAK_HOSTNAME}
       KC_HOSTNAME_PORT: ${KEYCLOAK_HOSTNAME_PORT}
-      KC_HOSTNAME_STRICT: false
-      KC_HOSTNAME_STRICT_HTTPS: false
-      KC_HOSTNAME_STRICT_BACKCHANNEL: false
-      KC_HTTP_ENABLED: true
+      KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME_STRICT_HTTPS: "false"
+      KC_HOSTNAME_STRICT_BACKCHANNEL: "false"
+      KC_HTTP_ENABLED: "true"
       KC_HTTP_PORT: ${KEYCLOAK_HTTP_PORT}
       KC_LOG_LEVEL: ${KEYCLOAK_LOG_LEVEL}
-      KC_METRICS_ENABLED: true
-      KC_HEALTH_ENABLED: true
+      KC_METRICS_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
     ports:
-      - "${KEYCLOAK_HOSTNAME_PORT}:${KEYCLOAK_HTTP_PORT}"
+      - "8090:8080"
     volumes:
       - ./realm-import:/opt/keycloak/data/import:ro
     depends_on:
-      postgres:
-        condition: service_healthy
+      - postgres
     networks:
       - app-network
     healthcheck:
@@ -68,7 +68,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 60s
 
   superset:
     build:
@@ -82,13 +81,12 @@ services:
       - REDIS_PORT=${REDIS_PORT}
       - SUPERSET_LOAD_EXAMPLES=${SUPERSET_LOAD_EXAMPLES}
     ports:
-      - "${SUPERSET_PORT}:8088"
+      - "8088:8088"
     volumes:
       - ./superset_config.py:/app/pythonpath/superset_config.py:ro
       - superset_home:/app/superset_home
     depends_on:
-      redis:
-        condition: service_healthy
+      - redis
     networks:
       - app-network
     command: >
@@ -103,7 +101,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 90s
 
 volumes:
   postgres_data:
