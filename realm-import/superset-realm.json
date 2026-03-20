@@ -38,7 +38,7 @@
       ],
       "protocol": "openid-connect",
       "attributes": {
-        "access.token.lifespan": "600"
+        "access.token.lifespan": "3600"
       },
       "protocolMappers": [
         {
